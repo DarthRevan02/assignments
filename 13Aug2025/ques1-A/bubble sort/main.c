@@ -2,107 +2,132 @@
 Algorithm: Generic Bubble Sort
 
 1. Start from the first element of the array.
-2. Compare the current element with the next element using a comparison function.
-3. If the comparison function indicates the elements are in wrong order, swap them.
-4. Repeat steps 2-3 for all elements, reducing the range by one each time (since the largest element "bubbles" to the end).
-5. Repeat the process for n-1 passes or until no swaps are needed.
+2. Compare current element with next using comparison function.
+3. If elements are in wrong order, swap them.
+4. Repeat for all elements, reducing range each pass.
+5. Continue until no swaps needed (optimization).
 
 Pseudo Code:
-procedure GenericBubbleSort(A[1..n], elementSize, compareFunction) 
+procedure BubbleSort(A[1..n], size, cmp) 
     for i ← 1 to n-1 do
         swapped ← false
         for j ← 1 to n-i do
-            if compareFunction(A[j], A[j+1]) > 0 then
-                swap A[j] and A[j+1] using elementSize
+            if cmp(A[j], A[j+1]) > 0 then
+                swap A[j] and A[j+1]
                 swapped ← true
             end if
         end for
-        if swapped = false then
-            break   // No swaps means array is already sorted
-        end if
+        if swapped = false then break
     end for
 end procedure
 
-Time Complexity:
-- Best Case: O(n) (when the array is already sorted, with optimization)
-- Average Case: O(n^2)
-- Worst Case: O(n^2)
-
-Space Complexity:
-- O(1) (in-place sorting, only uses temporary variable for swapping)
+Time Complexity: O(n) best, O(n^2) average/worst
+Space Complexity: O(1) - In-place sorting
 */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 // Generic bubble sort function
-void bubbleSort(void *arr, int n, size_t elementSize, 
-                int (*compare)(const void *a, const void *b)) {
-    char *base = (char *)arr;
-    void *temp = malloc(elementSize);
-    int swapped;
+void bubbleSort(void *arr, int n, size_t size, int (*cmp)(const void *, const void *)) {
+    char *a = (char *)arr;              // Cast for byte arithmetic
+    void *tmp = malloc(size);           // Temporary swap space
     
     for (int i = 0; i < n - 1; i++) {
-        swapped = 0;
+        int swapped = 0;                // Track if any swaps occurred
+        
+        // Compare adjacent elements, reduce range each pass
         for (int j = 0; j < n - i - 1; j++) {
-            void *elem1 = base + j * elementSize;
-            void *elem2 = base + (j + 1) * elementSize;
+            void *curr = a + j * size;          // Current element
+            void *next = a + (j + 1) * size;    // Next element
             
-            if (compare(elem1, elem2) > 0) {
-                memcpy(temp, elem1, elementSize);
-                memcpy(elem1, elem2, elementSize);
-                memcpy(elem2, temp, elementSize);
+            // Swap if elements are in wrong order
+            if (cmp(curr, next) > 0) {
+                memcpy(tmp, curr, size);        // tmp = curr
+                memcpy(curr, next, size);       // curr = next
+                memcpy(next, tmp, size);        // next = tmp
                 swapped = 1;
             }
         }
-        if (swapped == 0)
-            break;
+        
+        // Early termination if array is sorted
+        if (!swapped) break;
     }
-    free(temp);
+    
+    free(tmp);
 }
 
-// Comparison functions for different data types
-int compareInt(const void *a, const void *b) {
-    int ia = *(const int*)a;
-    int ib = *(const int*)b;
-    return (ia > ib) - (ia < ib);
+// Comparison functions
+int cmpInt(const void *a, const void *b) {
+    int x = *(int*)a, y = *(int*)b;
+    return (x > y) - (x < y);
 }
 
-int compareFloat(const void *a, const void *b) {
-    float fa = *(const float*)a;
-    float fb = *(const float*)b;
-    return (fa > fb) - (fa < fb);
+int cmpFloat(const void *a, const void *b) {
+    float x = *(float*)a, y = *(float*)b;
+    return (x > y) - (x < y);
 }
 
-int compareChar(const void *a, const void *b) {
-    char ca = *(const char*)a;
-    char cb = *(const char*)b;
-    return (ca > cb) - (ca < cb);
+int cmpChar(const void *a, const void *b) {
+    char x = *(char*)a, y = *(char*)b;
+    return x - y;
 }
 
-int compareString(const void *a, const void *b) {
-    return strcmp(*(const char**)a, *(const char**)b);
+int cmpStr(const void *a, const void *b) {
+    return strcmp(*(char**)a, *(char**)b);
 }
 
-// Example usage
 void main() {
-    // Example with integers
-    int intArr[] = {64, 34, 25, 12, 22, 11, 90};
-    int intSize = sizeof(intArr) / sizeof(intArr[0]);
-    bubbleSort(intArr, intSize, sizeof(int), compareInt);
+    // Integer example
+    int nums[] = {64, 34, 25, 12, 22, 11, 90};
+    int nSize = sizeof(nums) / sizeof(nums[0]);
     
-    // Example with floats
-    float floatArr[] = {3.14f, 2.71f, 1.41f, 1.73f};
-    int floatArraySize = sizeof(floatArr) / sizeof(floatArr[0]);
-    bubbleSort(floatArr, floatArraySize, sizeof(float), compareFloat);
+    printf("Original integers: ");
+    for (int i = 0; i < nSize; i++) printf("%d ", nums[i]);
     
-    // Example with characters
-    char charArr[] = {'z', 'b', 'x', 'a', 'm'};
-    int charArraySize = sizeof(charArr) / sizeof(charArr[0]);
-    bubbleSort(charArr, charArraySize, sizeof(char), compareChar);
+    bubbleSort(nums, nSize, sizeof(int), cmpInt);
     
-    // Example with strings
-    char *stringArr[] = {"banana", "apple", "orange", "grape"};
-    int stringArraySize = sizeof(stringArr) / sizeof(stringArr[0]);
-    bubbleSort(stringArr, stringArraySize, sizeof(char*), compareString);
+    printf("\nSorted integers:   ");
+    for (int i = 0; i < nSize; i++) printf("%d ", nums[i]);
+    printf("\n\n");
+    
+    // Float example
+    float vals[] = {3.14f, 2.71f, 1.41f, 1.73f};
+    int vSize = sizeof(vals) / sizeof(vals[0]);
+    
+    printf("Original floats: ");
+    for (int i = 0; i < vSize; i++) printf("%.2f ", vals[i]);
+    
+    bubbleSort(vals, vSize, sizeof(float), cmpFloat);
+    
+    printf("\nSorted floats:   ");
+    for (int i = 0; i < vSize; i++) printf("%.2f ", vals[i]);
+    printf("\n\n");
+    
+    // Character example
+    char chars[] = {'z', 'b', 'x', 'a', 'm'};
+    int cSize = sizeof(chars) / sizeof(chars[0]);
+    
+    printf("Original chars: ");
+    for (int i = 0; i < cSize; i++) printf("'%c' ", chars[i]);
+    
+    bubbleSort(chars, cSize, sizeof(char), cmpChar);
+    
+    printf("\nSorted chars:   ");
+    for (int i = 0; i < cSize; i++) printf("'%c' ", chars[i]);
+    printf("\n\n");
+    
+    // String example
+    char *strs[] = {"banana", "apple", "orange", "grape"};
+    int sSize = sizeof(strs) / sizeof(strs[0]);
+    
+    printf("Original strings: ");
+    for (int i = 0; i < sSize; i++) printf("\"%s\" ", strs[i]);
+    
+    bubbleSort(strs, sSize, sizeof(char*), cmpStr);
+    
+    printf("\nSorted strings:   ");
+    for (int i = 0; i < sSize; i++) printf("\"%s\" ", strs[i]);
+    printf("\n");
 }
