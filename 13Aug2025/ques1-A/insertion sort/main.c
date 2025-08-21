@@ -34,71 +34,108 @@ Space Complexity:
 #include <stdlib.h>
 #include <string.h>
 
-// Generic insertion sort function
-void insertionSort(void *arr, int n, size_t elementSize, 
-                   int (*compare)(const void *a, const void *b)) {
-    char *base = (char *)arr;
-    void *key = malloc(elementSize);
+// Generic insertion sort
+void insertionSort(void *arr, int n, size_t size, int (*cmp)(const void*, const void*)) {
+    char *a = (char*)arr;
+    void *key = malloc(size);
     
     for (int i = 1; i < n; i++) {
-        // Store current element as key
-        memcpy(key, base + i * elementSize, elementSize);
+        memcpy(key, a + i * size, size);           // Store current element
         int j = i - 1;
         
-        // Move elements greater than key one position ahead
-        while (j >= 0 && compare(base + j * elementSize, key) > 0) {
-            memcpy(base + (j + 1) * elementSize, base + j * elementSize, elementSize);
+        // Shift elements right until correct position found
+        while (j >= 0 && cmp(a + j * size, key) > 0) {
+            memcpy(a + (j + 1) * size, a + j * size, size);
             j--;
         }
         
-        // Insert key at correct position
-        memcpy(base + (j + 1) * elementSize, key, elementSize);
+        memcpy(a + (j + 1) * size, key, size);     // Insert key
     }
     
     free(key);
 }
 
-// Comparison functions for different data types
-int compareInt(const void *a, const void *b) {
-    int ia = *(const int*)a;
-    int ib = *(const int*)b;
-    return (ia > ib) - (ia < ib);
+// Comparison functions
+int cmpInt(const void *a, const void *b) {
+    int x = *(int*)a, y = *(int*)b;
+    return (x > y) - (x < y);
 }
 
-int compareFloat(const void *a, const void *b) {
-    float fa = *(const float*)a;
-    float fb = *(const float*)b;
-    return (fa > fb) - (fa < fb);
+int cmpFloat(const void *a, const void *b) {
+    float x = *(float*)a, y = *(float*)b;
+    return (x > y) - (x < y);
 }
 
-int compareChar(const void *a, const void *b) {
-    char ca = *(const char*)a;
-    char cb = *(const char*)b;
-    return (ca > cb) - (ca < cb);
+int cmpChar(const void *a, const void *b) {
+    return *(char*)a - *(char*)b;
 }
 
-int compareString(const void *a, const void *b) {
-    return strcmp(*(const char**)a, *(const char**)b);
+int cmpStr(const void *a, const void *b) {
+    return strcmp(*(char**)a, *(char**)b);
 }
 
-void main() {
-    // Example with integers
-    int intArr[] = {64, 34, 25, 12, 22, 11, 90};
-    int intSize = sizeof(intArr) / sizeof(intArr[0]);
-    insertionSort(intArr, intSize, sizeof(int), compareInt);
+// Helper function to print arrays
+void printInts(int *arr, int n) {
+    for (int i = 0; i < n; i++) printf("%d ", arr[i]);
+    printf("\n");
+}
+
+void printFloats(float *arr, int n) {
+    for (int i = 0; i < n; i++) printf("%.2f ", arr[i]);
+    printf("\n");
+}
+
+void printChars(char *arr, int n) {
+    for (int i = 0; i < n; i++) printf("'%c' ", arr[i]);
+    printf("\n");
+}
+
+void printStrs(char **arr, int n) {
+    for (int i = 0; i < n; i++) printf("\"%s\" ", arr[i]);
+    printf("\n");
+}
+
+int main() {
+    printf("=== GENERIC INSERTION SORT DEMO ===\n\n");
     
-    // Example with floats
-    float floatArr[] = {3.14f, 2.71f, 1.41f, 1.73f};
-    int floatArraySize = sizeof(floatArr) / sizeof(floatArr[0]);
-    insertionSort(floatArr, floatArraySize, sizeof(float), compareFloat);
+    // Integer example
+    int nums[] = {64, 34, 25, 12, 22, 11, 90};
+    int n = sizeof(nums) / sizeof(nums[0]);
     
-    // Example with characters
-    char charArr[] = {'z', 'b', 'x', 'a', 'm'};
-    int charArraySize = sizeof(charArr) / sizeof(charArr[0]);
-    insertionSort(charArr, charArraySize, sizeof(char), compareChar);
+    printf("INTEGERS:\n");
+    printf("Original: "); printInts(nums, n);
+    insertionSort(nums, n, sizeof(int), cmpInt);
+    printf("Sorted:   "); printInts(nums, n);
+    printf("\n");
     
-    // Example with strings
-    char *stringArr[] = {"banana", "apple", "orange", "grape"};
-    int stringArraySize = sizeof(stringArr) / sizeof(stringArr[0]);
-    insertionSort(stringArr, stringArraySize, sizeof(char*), compareString);
+    // Float example
+    float vals[] = {3.14f, 2.71f, 1.41f, 1.73f};
+    n = sizeof(vals) / sizeof(vals[0]);
+    
+    printf("FLOATS:\n");
+    printf("Original: "); printFloats(vals, n);
+    insertionSort(vals, n, sizeof(float), cmpFloat);
+    printf("Sorted:   "); printFloats(vals, n);
+    printf("\n");
+    
+    // Character example
+    char chars[] = {'z', 'b', 'x', 'a', 'm'};
+    n = sizeof(chars) / sizeof(chars[0]);
+    
+    printf("CHARACTERS:\n");
+    printf("Original: "); printChars(chars, n);
+    insertionSort(chars, n, sizeof(char), cmpChar);
+    printf("Sorted:   "); printChars(chars, n);
+    printf("\n");
+    
+    // String example
+    char *strs[] = {"banana", "apple", "orange", "grape"};
+    n = sizeof(strs) / sizeof(strs[0]);
+    
+    printf("STRINGS:\n");
+    printf("Original: "); printStrs(strs, n);
+    insertionSort(strs, n, sizeof(char*), cmpStr);
+    printf("Sorted:   "); printStrs(strs, n);
+    
+    return 0;
 }
