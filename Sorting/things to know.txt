@@ -1,0 +1,27 @@
+-lm
+
+This tells the linker to link with the math library (libm).
+
+Required when you use math functions like:
+
+sqrt()
+
+log()
+
+pow()
+
+sin(), cos(), etc.
+
+Without -lm, you’ll get "undefined reference" errors for those functions.
+
+✅ 3. -O2
+
+This enables compiler optimizations at level 2.
+
+-O2 is a moderate optimization level:
+
+Makes the code faster and smaller than default (-O0)
+
+Without being as aggressive as -O3 (which may increase binary size or compile time)
+
+✅ It’s commonly used for production builds where speed matters but you still want decent compile times.
