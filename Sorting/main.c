@@ -22,7 +22,12 @@ void main()
         return;
     }
 
-    
+    // Print table header
+    printf("\n%s Sort Performance Analysis\n", sorts[choice-1]);
+    printf("================================================================================================\n");
+    printf("| %-10s | %-12s | %-12s | %-10s | %-10s | %-10s | %-10s |\n", 
+           "Array Size", "Avg Time", "SD Time", "Avg Comps", "Avg Swaps", "SD Comps", "SD Swaps");
+    printf("================================================================================================\n");
 
     for (int i=0;i<countIndex;++i)
     {
@@ -104,7 +109,6 @@ void main()
             free(arr);
         }
 
-
         char analysis_filename[150];
         sprintf(analysis_filename, "ANALYSIS_%s.csv", sorts[choice-1]);
 
@@ -122,7 +126,6 @@ void main()
         }
         if (is_new_file) {
             fprintf(analysis_file, "SizeOfArray,AvgTime,SDtime,AvgComparisons,AvgSwaps,SDcomparisions,SDswaps\n");
-            printf("SizeOfArray,AvgTime,SDtime,AvgComparisons,AvgSwaps,SDcomparisions,SDswaps\n");
         }
         double avgCpuTime = calcAvg(cpuTimes,FILES_PER_SIZE);
         double sdCpuTime = calcSD(cpuTimes,FILES_PER_SIZE,avgCpuTime);
@@ -133,9 +136,11 @@ void main()
         fprintf(analysis_file, "%d,%g,%g,%g,%g,%g,%g\n", current_size, avgCpuTime,sdCpuTime,avgComps,avgSwaps,sdComps,sdSwaps);
         fclose(analysis_file);
         
-        // printf("%-11d,%-7g,%-6g,%-13g,%-8g,%-14g,%-7g\n", 
-            // current_size, avgCpuTime, sdCpuTime, avgComps, avgSwaps, sdComps, sdSwaps);
-        printf("%d,%g,%g,%g,%g,%g,%g\n", current_size, avgCpuTime,sdCpuTime,avgComps,avgSwaps,sdComps,sdSwaps);
+        // Print table row with formatted output
+        printf("| %-10d | %-12.5g | %-12.5g | %-10.0f | %-10.0f | %-10.0f | %-10.0f |\n", 
+               current_size, avgCpuTime, sdCpuTime, avgComps, avgSwaps, sdComps, sdSwaps);
     }
     
+    // Print table footer
+    printf("================================================================================================\n");
 }

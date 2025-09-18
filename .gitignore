@@ -1,4 +1,120 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+debug.log
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# mypy
+.mypy_cache/
+.dmypy.json
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# C/C++
+*.o
+*.obj
+*.exe
+*.out
+*.app
+*.i
+*.ii
+*.d
+*.log
+*.dep
+*.pch
+*.pdb
+*.idb
+*.class
+*.ilk
+*.suo
+*.sdf
+*.opensdf
+*.tlog
+*.vcxproj*
+*.user
+*.ncb
+*.sln
+*.vcproj*
+
+# Archives
+*.zip
+*.7z
+*.tar
+*.gz
+*.rar
+
+# CSV analysis outputs
+Csv files/*.png
+Csv files/*.pdf
+Csv files/*.svg
+Csv files/*.jpg
+Csv files/*.jpeg
+
+# Misc
+*.swp
+*~
+
+# Existing patterns
 .vscode
 .exe
 .txt
 .7z
+.gitignore
+.zip
+.csv
