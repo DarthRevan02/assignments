@@ -3,6 +3,147 @@
 //Function to perform bubble sort,returning the number of comparisons 
 // The number of swaps is passed back through a pointer
 
+// Merge Sort Helper
+void merge(int arr[], int l, int m, int r, long long *swaps, long long *comparisons) {
+    int n1 = m - l + 1;
+    int n2 = r - m;
+    int L[n1], R[n2];
+    for (int i = 0; i < n1; i++) L[i] = arr[l + i];
+    for (int j = 0; j < n2; j++) R[j] = arr[m + 1 + j];
+    int i = 0, j = 0, k = l;
+    while (i < n1 && j < n2) {
+        (*comparisons)++;
+        if (L[i] <= R[j]) {
+            arr[k++] = L[i++];
+        } else {
+            arr[k++] = R[j++];
+            (*swaps)++;
+        }
+    }
+    while (i < n1) arr[k++] = L[i++];
+    while (j < n2) arr[k++] = R[j++];
+}
+
+long long mergeSortActual(int arr[], int l, int r, long long *swaps) {
+    long long comparisons = 0;
+    if (l < r) {
+        int m = l + (r - l) / 2;
+        comparisons += mergeSortActual(arr, l, m, swaps);
+        comparisons += mergeSortActual(arr, m + 1, r, swaps);
+        merge(arr, l, m, r, swaps, &comparisons);
+    }
+    return comparisons;
+}
+
+long long mergeSort(int arr[], int n, long long *swaps) {
+    *swaps = 0;
+    return mergeSortActual(arr, 0, n - 1, swaps);
+}
+
+// Counting Sort (for non-negative integers)
+long long countingSort(int arr[], int n, long long *swaps) {
+    *swaps = 0;
+    long long comparisons = 0;
+    if (n <= 1) return 0;
+    int max = arr[0];
+    for (int i = 1; i < n; i++) {
+        comparisons++;
+        if (arr[i] > max) max = arr[i];
+    }
+    int count[max + 1];
+    for (int i = 0; i <= max; i++) count[i] = 0;
+    for (int i = 0; i < n; i++) count[arr[i]]++;
+    int idx = 0;
+    for (int i = 0; i <= max; i++) {
+        while (count[i]-- > 0) {
+            arr[idx++] = i;
+            (*swaps)++;
+        }
+    }
+    return comparisons;
+}
+
+// Radix Sort (for non-negative integers)
+int getMax(int arr[], int n, long long *comparisons) {
+    int max = arr[0];
+    for (int i = 1; i < n; i++) {
+        (*comparisons)++;
+        if (arr[i] > max) max = arr[i];
+    }
+    return max;
+}
+
+void countSortForRadix(int arr[], int n, int exp, long long *swaps, long long *comparisons) {
+    int output[n], count[10] = {0};
+    for (int i = 0; i < n; i++) count[(arr[i] / exp) % 10]++;
+    for (int i = 1; i < 10; i++) count[i] += count[i - 1];
+    for (int i = n - 1; i >= 0; i--) {
+        output[count[(arr[i] / exp) % 10] - 1] = arr[i];
+        count[(arr[i] / exp) % 10]--;
+        (*swaps)++;
+    }
+    for (int i = 0; i < n; i++) arr[i] = output[i];
+}
+
+long long radixSort(int arr[], int n, long long *swaps) {
+    *swaps = 0;
+    long long comparisons = 0;
+    int m = getMax(arr, n, &comparisons);
+    for (int exp = 1; m / exp > 0; exp *= 10) {
+        countSortForRadix(arr, n, exp, swaps, &comparisons);
+    }
+    return comparisons;
+}
+
+// Bucket Sort (for non-negative integers, assumes values in a known range)
+#include <stdlib.h>
+void insertionForBucket(int arr[], int n) {
+    int i, key, j;
+    for (i = 1; i < n; i++) {
+        key = arr[i];
+        j = i - 1;
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+long long bucketSort(int arr[], int n, long long *swaps) {
+    *swaps = 0;
+    long long comparisons = 0;
+    if (n <= 0) return 0;
+    int max = arr[0], min = arr[0];
+    for (int i = 1; i < n; i++) {
+        comparisons++;
+        if (arr[i] > max) max = arr[i];
+        if (arr[i] < min) min = arr[i];
+    }
+    int bucketCount = n;
+    int **buckets = (int **)malloc(bucketCount * sizeof(int *));
+    int *bucketSizes = (int *)calloc(bucketCount, sizeof(int));
+    for (int i = 0; i < bucketCount; i++) {
+        buckets[i] = (int *)malloc(n * sizeof(int));
+    }
+    for (int i = 0; i < n; i++) {
+        int bi = (int)(((long long)(arr[i] - min) * (bucketCount - 1)) / (max - min + 1));
+        buckets[bi][bucketSizes[bi]++] = arr[i];
+    }
+    int idx = 0;
+    for (int i = 0; i < bucketCount; i++) {
+        insertionForBucket(buckets[i], bucketSizes[i]);
+        for (int j = 0; j < bucketSizes[i]; j++) {
+            arr[idx++] = buckets[i][j];
+            (*swaps)++;
+        }
+        free(buckets[i]);
+    }
+    free(buckets);
+    free(bucketSizes);
+    return comparisons;
+}
+
 long long bubbleSort(int arr[], int n,long long *swaps){
 
         long long comparisons=0;
