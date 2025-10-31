@@ -7,7 +7,7 @@
 #define MAX_CODE_LENGTH 256
 #define MAX_CHARS 256
 #define INPUT_FILE_NAME "input.txt"
-#define OUTPUT_FILE_NAME "output.huff" // Now contains ASCII '0's and '1's
+#define OUTPUT_FILE_NAME "output.huff"
 
 // --- Data Structures (Min-Heap and Tree) ---
 
@@ -112,7 +112,7 @@ MinHeapNode* buildHuffmanTree(int* unique_chars_count) {
     buildMinHeap(minHeap);
 
     if (*unique_chars_count == 0) return NULL;
-    if (*unique_chars_count == 1) { 
+    if (*unique_chars_count == 1) {
          top = newNode(0, minHeap->array[0]->freq);
          top->left = minHeap->array[0];
          return top;
@@ -121,14 +121,14 @@ MinHeapNode* buildHuffmanTree(int* unique_chars_count) {
     while (!isSizeOne(minHeap)) {
         left = extractMin(minHeap);
         right = extractMin(minHeap);
-        top = newNode(0, left->freq + right->freq); 
+        top = newNode(0, left->freq + right->freq);
         top->left = left;
         top->right = right;
         insertMinHeap(minHeap, top);
     }
     MinHeapNode* root = extractMin(minHeap);
     free(minHeap);
-    return root; 
+    return root;
 }
 
 // Recursive function to store codes (HUFFMAN_ASSIGN_CODES)
@@ -158,53 +158,46 @@ void freeTree(MinHeapNode* node) {
     free(node);
 }
 
-// Displays the codebook and compression metrics
-void printCodebook(int unique_chars_count, long long total_chars, long long compressed_bits) {
-    long long originalBits = total_chars * 8;
-    
-    printf("\n\n=============== HUFFMAN COMPRESSION ANALYSIS ===============\n");
-    printf("\n[4] HUFFMAN CODEBOOK DISPLAY\n");
-    printf("+-------+-----------+-----------+-------------------+\n");
-    printf("| Char  | ASCII/Idx | Frequency | Huffman Code      |\n");
-    printf("+-------+-----------+-----------+-------------------+\n");
+// --- File I/O and Bit Manipulation ---
 
-    for (int i = 0; i < MAX_CHARS; i++) {
-        if (charFreq[i] > 0) {
-            char display_char = (i >= 32 && i <= 126) ? (char)i : '?'; 
-            printf("| '%c'   | %-9d | %-9lld | %-17s |\n", 
-                   display_char, i, charFreq[i], huffmanCodes[i]);
-        }
+// Writes a single bit to the file using a buffer
+void writeBit(FILE *fp, int bit, int *bit_count, unsigned char *buffer) {
+    *buffer = (*buffer << 1) | (bit & 1);
+    (*bit_count)++;
+
+    if (*bit_count == 8) {
+        fwrite(buffer, 1, 1, fp);
+        *buffer = 0;
+        *bit_count = 0;
     }
-    printf("+-------+-----------+-----------+-------------------+\n");
+}
 
-    printf("\n[5] COMPRESSION VERIFICATION AND METRICS\n");
-    printf("Original String Length (chars): %lld\n", total_chars);
-    printf("Number of Unique Characters (n): %d\n", unique_chars_count);
-    printf("Original Size (Fixed 8-bit): %lld bits\n", originalBits);
-    printf("Compressed Size (Variable-length): %lld bits (NOTE: This is the theoretical size)\n", compressed_bits);
-    printf("Actual File Size Written: %lld bytes (ASCII '0'/'1' format for verification)\n", compressed_bits / 8 + (compressed_bits % 8 != 0) + sizeof(int) + (unique_chars_count * (sizeof(unsigned char) + sizeof(long long))) );
-    
-    if (originalBits > 0) {
-        double ratio = (double)compressed_bits / originalBits;
-        printf("Theoretical Space Savings: %.2f%%\n", (1.0 - ratio) * 100.0);
+// Writes the remaining bits in the buffer, padding with zeros
+void flushBits(FILE *fp, int *bit_count, unsigned char *buffer) {
+    if (*bit_count > 0) {
+        // Pad with zeros to complete the byte
+        *buffer <<= (8 - *bit_count);
+        fwrite(buffer, 1, 1, fp);
+        *buffer = 0;
+        *bit_count = 0;
     }
 }
 
 // Writes the frequency table (Header) to the file
 void writeHeader(FILE *fp, int unique_chars_count) {
     // 1. Write the number of unique characters
-    fwrite(&unique_chars_count, sizeof(int), 1, fp); 
-    
+    fwrite(&unique_chars_count, sizeof(int), 1, fp);
+
     // 2. Write the (char, frequency) pairs
     for (int i = 0; i < MAX_CHARS; i++) {
         if (charFreq[i] > 0) {
             unsigned char char_data = (unsigned char)i;
             long long freq_data = charFreq[i];
-            
+
             // Write char
-            fwrite(&char_data, sizeof(unsigned char), 1, fp); 
+            fwrite(&char_data, sizeof(unsigned char), 1, fp);
             // Write frequency (using 8 bytes for safety)
-            fwrite(&freq_data, sizeof(long long), 1, fp); 
+            fwrite(&freq_data, sizeof(long long), 1, fp);
         }
     }
 }
@@ -240,49 +233,42 @@ void compressFile(const char* input_filename, const char* output_filename) {
     storeCodes(root, arr, 0);
 
     // 3. Write Compressed File (Header + Bitstream)
-    // NOTE: Writing in "w" mode for ASCII output
-    FILE *fp_out = fopen(output_filename, "w"); 
+    FILE *fp_out = fopen(output_filename, "wb");
     if (!fp_out) {
         fprintf(stderr, "Error: Could not open output file %s\n", output_filename);
         freeTree(root);
         return;
     }
 
-    // Write the Codebook (Header) in BINARY format first (important for decompression)
+    // Write the Codebook (Header)
     writeHeader(fp_out, unique_chars_count);
-    
-    // PASS 2: Write ASCII '0' and '1' stream
+
+    // PASS 2: Write Bitstream
     fp_in = fopen(input_filename, "rb");
-    
+
+    int bit_count = 0;
+    unsigned char buffer = 0;
     long long compressed_bits = 0;
 
-    // We must seek past the header when reopening the file pointer for reading the bitstream,
-    // but since we write the header in binary and the stream in text, we need to close and reopen
-    // the file pointer for the bitstream section.
-    // For simplicity in this practical, we'll write the header first, then the ASCII stream.
-
-    // Calculate position after header write
-    long header_size = sizeof(int) + unique_chars_count * (sizeof(unsigned char) + sizeof(long long));
-    fseek(fp_out, header_size, SEEK_SET); // Set pointer past the header location
-
-    // Write the ASCII Stream
     while ((c = fgetc(fp_in)) != EOF) {
         char *code = huffmanCodes[(unsigned char)c];
-        // Write '0' or '1' directly as a character
-        fputs(code, fp_out); 
-        compressed_bits += strlen(code);
+        for (int i = 0; code[i] != '\0'; i++) {
+            writeBit(fp_out, code[i] - '0', &bit_count, &buffer);
+            compressed_bits++;
+        }
     }
+
+    // Flush any remaining bits in the buffer
+    flushBits(fp_out, &bit_count, &buffer);
 
     fclose(fp_in);
     fclose(fp_out);
 
-    // Display Codebook and Analysis
-    printCodebook(unique_chars_count, total_chars, compressed_bits);
-
-    printf("\nCompression Successful!\n");
+    printf("Compression Successful!\n");
     printf("Input File: %s (%lld bytes)\n", input_filename, total_chars);
-    printf("Output File: %s (Content is ASCII '0'/'1' for verification)\n", output_filename);
-    
+    printf("Output File: %s (Unique Chars: %d)\n", output_filename, unique_chars_count);
+    printf("Total Compressed Bits (excluding header): %lld\n", compressed_bits);
+
     // Cleanup
     for (int i = 0; i < MAX_CHARS; i++) {
         if (huffmanCodes[i] != NULL) free(huffmanCodes[i]);
@@ -291,17 +277,20 @@ void compressFile(const char* input_filename, const char* output_filename) {
 }
 
 int main(int argc, char *argv[]) {
+    // For demonstration, we assume two files exist: input.txt and output.huff
+    // In a real scenario, you'd check command line arguments.
     printf("--- Huffman Compressor ---\n");
-    printf("NOTE: Output file will contain ASCII '0' and '1' characters for easy verification.\n");
-    
+    printf("NOTE: Using placeholder file names for demonstration:\n");
+    printf("Input: %s, Output: %s\n\n", INPUT_FILE_NAME, OUTPUT_FILE_NAME);
+
     // Create a dummy input file for testing
     FILE *dummy_in = fopen(INPUT_FILE_NAME, "w");
     if (dummy_in) {
         fprintf(dummy_in, "this is a test input for the huffman compression algorithm and decompression process.");
         fclose(dummy_in);
     }
-    
+
     compressFile(INPUT_FILE_NAME, OUTPUT_FILE_NAME);
-    
+
     return 0;
 }

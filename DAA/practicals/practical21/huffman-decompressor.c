@@ -96,8 +96,8 @@ void buildMinHeap(MinHeap* minHeap) {
 }
 
 // Function to check if size of heap is 1 or not
-int isSizeOne(MinHeap* minHeap) { 
-    return (minHeap->size == 1); 
+int isSizeOne(MinHeap* minHeap) {
+    return (minHeap->size == 1);
 }
 
 // Function to rebuild the Huffman Tree from frequencies (HUFFMAN_BUILD)
@@ -111,34 +111,34 @@ MinHeapNode* buildHuffmanTree(int unique_chars_count) {
             minHeap->array[minHeap->size++] = newNode(i, charFreq[i]);
         }
     }
-    
+
     if (unique_chars_count == 0) return NULL;
-    
+
     // IMPORTANT: Heapify the array now that all elements are loaded
-    buildMinHeap(minHeap); 
-    
-    if (unique_chars_count == 1) { 
+    buildMinHeap(minHeap);
+
+    if (unique_chars_count == 1) {
          top = newNode(0, minHeap->array[0]->freq);
          top->left = minHeap->array[0];
          // Clean up the minHeap wrapper struct
-         free(minHeap->array); 
+         free(minHeap->array);
          free(minHeap);
          return top;
     }
 
-    while (minHeap->size > 1) { 
+    while (minHeap->size > 1) {
         left = extractMin(minHeap);
         right = extractMin(minHeap);
-        top = newNode(0, left->freq + right->freq); 
+        top = newNode(0, left->freq + right->freq);
         top->left = left;
         top->right = right;
         insertMinHeap(minHeap, top);
     }
     MinHeapNode* root = extractMin(minHeap);
     // Clean up the minHeap wrapper struct
-    free(minHeap->array); 
+    free(minHeap->array);
     free(minHeap);
-    return root; 
+    return root;
 }
 
 void freeTree(MinHeapNode* node) {
@@ -150,20 +150,21 @@ void freeTree(MinHeapNode* node) {
 
 // --- File I/O and Bit Manipulation ---
 
-// Reads a single bit (ASCII '0' or '1' character) from the file
-int readBit(FILE *fp) {
-    int c = fgetc(fp);
-    if (c == EOF) {
-        return -1; // End of file
+// Reads a single bit from the file using a buffer
+int readBit(FILE *fp, int *bit_count, unsigned char *buffer) {
+    if (*bit_count == 0) {
+        if (fread(buffer, 1, 1, fp) != 1) {
+            return -1; // EOF or error
+        }
+        *bit_count = 8;
     }
-    if (c == '0') {
-        return 0;
-    } else if (c == '1') {
-        return 1;
-    }
-    // Should not happen if compressed file is correctly generated
-    fprintf(stderr, "Error: Invalid character '%c' in compressed stream.\n", c);
-    return -2; 
+
+    // Extract the most significant bit (MSB) first
+    int bit = (*buffer >> 7) & 1;
+    *buffer <<= 1;
+    (*bit_count)--;
+
+    return bit;
 }
 
 // Reads the frequency table (Header) from the file
@@ -173,32 +174,31 @@ long long readHeader(FILE *fp, int *unique_chars_count) {
         fprintf(stderr, "Error reading unique character count from header.\n");
         return -1;
     }
-    
+
     long long total_chars = 0;
-    
+
     // 2. Read the (char, frequency) pairs
     for (int i = 0; i < *unique_chars_count; i++) {
         unsigned char char_data;
         long long freq_data;
-        
+
         if (fread(&char_data, sizeof(unsigned char), 1, fp) != 1 ||
             fread(&freq_data, sizeof(long long), 1, fp) != 1) {
             fprintf(stderr, "Error reading char/frequency pair from header.\n");
             return -1;
         }
-        
+
         charFreq[char_data] = freq_data;
         total_chars += freq_data;
     }
-    
+
     return total_chars;
 }
 
 // --- Main Decompression Logic ---
 
 void decompressFile(const char* input_filename, const char* output_filename) {
-    // Use "r" mode here since the bitstream is now text, though "rb" is okay for reading the binary header
-    FILE *fp_in = fopen(input_filename, "rb"); 
+    FILE *fp_in = fopen(input_filename, "rb");
     if (!fp_in) {
         fprintf(stderr, "Error: Could not open compressed file %s\n", input_filename);
         return;
@@ -232,22 +232,18 @@ void decompressFile(const char* input_filename, const char* output_filename) {
     }
 
     MinHeapNode* current = root;
+    int bit_count = 0;
+    unsigned char buffer = 0;
     long long decoded_chars = 0;
 
     printf("Decompressing %lld characters...\n", total_chars);
-    
+
     while (decoded_chars < total_chars) {
-        // Read a character bit ('0' or '1')
-        int bit = readBit(fp_in); 
-        
+        int bit = readBit(fp_in, &bit_count, &buffer);
+
         if (bit == -1) {
-            // EOF reached. Should not happen before total_chars is met.
             fprintf(stderr, "Error: Premature EOF encountered during decoding.\n");
             break;
-        }
-        if (bit == -2) {
-             // Invalid character encountered. Stop.
-             break;
         }
 
         if (bit == 0) {
@@ -267,7 +263,7 @@ void decompressFile(const char* input_filename, const char* output_filename) {
     fclose(fp_in);
     fclose(fp_out);
     freeTree(root);
-    
+
     if (decoded_chars == total_chars) {
         printf("Decompression Successful!\n");
         printf("Output File: %s (%lld bytes)\n", output_filename, decoded_chars);
@@ -278,11 +274,11 @@ void decompressFile(const char* input_filename, const char* output_filename) {
 }
 
 int main(int argc, char *argv[]) {
-    printf("--- Huffman Decompressor (ASCII Mode) ---\n");
-    printf("NOTE: Using placeholder file names for demonstration.\n");
-    printf("It assumes the compressed file contains ASCII '0's and '1's.\n\n");
-    
+    printf("--- Huffman Decompressor ---\n");
+    printf("NOTE: Using placeholder file names for demonstration:\n");
+    printf("Input: %s, Output: %s\n\n", INPUT_FILE_NAME, OUTPUT_FILE_NAME);
+
     decompressFile(INPUT_FILE_NAME, OUTPUT_FILE_NAME);
-    
+
     return 0;
 }
