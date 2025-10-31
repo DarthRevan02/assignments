@@ -1,0 +1,1 @@
+this is a test input for the huffman compression algorithm and decompression process.
