@@ -103,22 +103,17 @@ void main()
             for (int k = 0; k < current_size; ++k) {
                 fprintf(sorted_file, "%d\n", arr[k]);
             }
-            fclose(sorted_file); 
-
-                                   
+            fclose(sorted_file);                         
             free(arr);
         }
-
         char analysis_filename[150];
         sprintf(analysis_filename, "ANALYSIS_%s.csv", sorts[choice-1]);
-
         int is_new_file = 0;
         FILE *check_file = fopen(analysis_filename, "r");
         if (check_file == NULL) {
         is_new_file = 1;  // File doesn't exist
         }
         fclose(check_file);
-
         FILE *analysis_file = fopen(analysis_filename, "a");
         if (analysis_file == NULL) {
             printf("Error: Could not open file %s for appending.\n", analysis_filename);
